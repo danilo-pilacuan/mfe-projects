@@ -1,4 +1,4 @@
-import {
+﻿import {
   withNativeFederation,
   fromPackageJson,
 } from '@angular-architects/native-federation/config';
@@ -19,7 +19,10 @@ export default withNativeFederation({
     build: 'package',
   })
     .patch(['@angular/*'], { includeSecondaries: { keepAll: true } })
-    .override({ '@projecthub/shared': { singleton: true, strictVersion: true, requiredVersion: 'auto' } })
+    .override({
+    '@projecthub/shared': { singleton: true, strictVersion: true, requiredVersion: 'auto' },
+    '@projecthub/ui': { singleton: true, strictVersion: true, requiredVersion: 'auto' },
+  })
     .get(),
 
   //sharedMappings: mappingsFromWorkspace({ singleton: true }).filter(['@my-org/*']).get(),
