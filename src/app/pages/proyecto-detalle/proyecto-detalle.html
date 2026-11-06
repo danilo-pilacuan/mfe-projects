@@ -51,7 +51,77 @@
     </div>
 
     <section class="bloque">
-      <h2>Etapas de trabajo</h2>
+      <div class="bloque-cabecera">
+        <h2>Etapas de trabajo</h2>
+        @if (permisos.puedeEditarEtapa(p.id)) {
+          <button type="button" class="boton primario" (click)="abrirNuevaEtapa()">Nueva etapa</button>
+        }
+      </div>
+      @if (formEtapaVisible()) {
+        <form class="form-etapa" (submit)="$event.preventDefault(); guardarEtapa()">
+          @if (!sesion.haySesion()) {
+            <ph-permission-banner
+              titulo="Sesion requerida"
+              detalle="Seleccione un usuario en el shell para gestionar etapas de trabajo."
+              variante="warn"
+            />
+          }
+          <h3>{{ etapaEditandoId() ? 'Editar etapa' : 'Nueva etapa de trabajo' }}</h3>
+          <ph-form-field label="Nombre" [requerido]="true" [error]="etapaError() || null">
+            <input
+              type="text"
+              placeholder="Nombre de la etapa"
+              [value]="etapaNombre()"
+              (input)="etapaNombre.set($any($event.target).value)"
+            />
+          </ph-form-field>
+          <div class="form-etapa-fila">
+            <ph-form-field label="Fecha inicio" [requerido]="true">
+              <input
+                type="date"
+                [value]="etapaFechaInicio()"
+                (change)="etapaFechaInicio.set($any($event.target).value)"
+              />
+            </ph-form-field>
+            <ph-form-field label="Fecha fin" [requerido]="true">
+              <input
+                type="date"
+                [value]="etapaFechaFin()"
+                (change)="etapaFechaFin.set($any($event.target).value)"
+              />
+            </ph-form-field>
+          </div>
+          <div class="form-etapa-fila">
+            <ph-form-field label="Responsable" [requerido]="true">
+              <select
+                [value]="etapaResponsableId()"
+                (change)="etapaResponsableId.set($any($event.target).value)"
+              >
+                <option value="" disabled>Seleccione un responsable</option>
+                @for (u of usuariosActivos(); track u.id) {
+                  <option [value]="u.id">{{ u.nombre }} ({{ u.roles.join(', ') }})</option>
+                }
+              </select>
+            </ph-form-field>
+            <ph-form-field label="Presupuesto asignado (COP)" [requerido]="true">
+              <input
+                type="number"
+                min="0"
+                step="1000"
+                placeholder="0"
+                [value]="etapaPresupuesto()"
+                (input)="etapaPresupuesto.set($any($event.target).value)"
+              />
+            </ph-form-field>
+          </div>
+          <div class="acciones-form">
+            <button type="submit" class="boton primario">
+              {{ etapaEditandoId() ? 'Guardar cambios' : 'Crear etapa' }}
+            </button>
+            <button type="button" class="boton" (click)="cancelarFormEtapa()">Cancelar</button>
+          </div>
+        </form>
+      }
       <ph-data-table [filas]="filasEtapas()" [cargando]="false" textoVacio="Sin etapas de trabajo registradas.">
         <ph-data-table-column name="nombre" header="Etapa">
           <ng-template #cell let-fila>{{ fila.nombre }}</ng-template>
@@ -82,6 +152,7 @@
         <ph-data-table-column name="acciones" header="Acciones">
           <ng-template #cell let-fila>
             @if (permisos.puedeEditarEtapa(p.id)) {
+              <button type="button" class="boton" (click)="abrirEdicionEtapa(etapaPorId(fila.id))">Editar</button>
               <button type="button" class="boton" (click)="registrarAvance(fila)">Avance</button>
             }
             @if (permisos.puedeRegistrarConsumo(p.id)) {

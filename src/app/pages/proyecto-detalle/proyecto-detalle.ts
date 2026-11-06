@@ -8,10 +8,19 @@ import {
   Proyecto,
   ProyectoResumen,
   SesionStore,
+  Usuario,
   evaluarGate,
   SESION_STORE,
 } from '@projecthub/shared';
-import { DataTable, DataTableColumn, GanttChart, IntlFormat, StageBadge } from '@projecthub/ui';
+import {
+  DataTable,
+  DataTableColumn,
+  FormField,
+  GanttChart,
+  IntlFormat,
+  PermissionBanner,
+  StageBadge,
+} from '@projecthub/ui';
 import { PermisosUi } from '../../permisos-ui';
 
 interface FilaEtapa {
@@ -36,7 +45,7 @@ interface FilaEtapa {
 @Component({
   selector: 'app-proyecto-detalle',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DataTable, DataTableColumn, GanttChart, StageBadge, RouterLink],
+  imports: [DataTable, DataTableColumn, FormField, GanttChart, PermissionBanner, StageBadge, RouterLink],
   templateUrl: './proyecto-detalle.html',
   styleUrl: './proyecto-detalle.scss',
 })
@@ -50,6 +59,18 @@ export class ProyectoDetalle {
 
   readonly proyectoId = signal('');
   readonly mensaje = signal<{ texto: string; tipo: 'info' | 'error' } | null>(null);
+
+  // Formulario de etapas de trabajo (4.1/4.2).
+  readonly formEtapaVisible = signal(false);
+  readonly etapaEditandoId = signal<string | null>(null);
+  readonly etapaNombre = signal('');
+  readonly etapaFechaInicio = signal('');
+  readonly etapaFechaFin = signal('');
+  readonly etapaResponsableId = signal('');
+  readonly etapaPresupuesto = signal('');
+  readonly etapaError = signal('');
+
+  readonly usuariosActivos = computed<readonly Usuario[]>(() => this.sesion.usuariosActivos());
 
   readonly proyecto = computed<Proyecto | null>(() =>
     this.proyectoId() ? (this.store.proyectoPorId(this.proyectoId()) ?? null) : null,
@@ -209,8 +230,99 @@ export class ProyectoDetalle {
     }
   }
 
+  protected abrirNuevaEtapa(): void {
+    if (!this.sesion.usuarioActivo()) {
+      return;
+    }
+    this.etapaEditandoId.set(null);
+    this.etapaNombre.set('');
+    this.etapaFechaInicio.set('');
+    this.etapaFechaFin.set('');
+    this.etapaResponsableId.set('');
+    this.etapaPresupuesto.set('');
+    this.etapaError.set('');
+    this.formEtapaVisible.set(true);
+  }
+
+  protected abrirEdicionEtapa(etapa: EtapaTrabajo): void {
+    if (!this.sesion.usuarioActivo()) {
+      return;
+    }
+    this.etapaEditandoId.set(etapa.id);
+    this.etapaNombre.set(etapa.nombre);
+    this.etapaFechaInicio.set(etapa.fechaInicio);
+    this.etapaFechaFin.set(etapa.fechaFin);
+    this.etapaResponsableId.set(etapa.responsableId);
+    this.etapaPresupuesto.set(String(etapa.presupuestoAsignado));
+    this.etapaError.set('');
+    this.formEtapaVisible.set(true);
+  }
+
+  protected cancelarFormEtapa(): void {
+    this.formEtapaVisible.set(false);
+    this.etapaError.set('');
+  }
+
+  protected guardarEtapa(): void {
+    const actor = this.sesion.usuarioActivo();
+    if (!actor) {
+      return;
+    }
+    const nombre = this.etapaNombre().trim();
+    const inicio = this.etapaFechaInicio();
+    const fin = this.etapaFechaFin();
+    const responsableId = this.etapaResponsableId();
+    const asignado = Number(this.etapaPresupuesto());
+    if (!nombre || !inicio || !fin || !responsableId || !Number.isFinite(asignado)) {
+      this.etapaError.set('Complete todos los campos obligatorios.');
+      return;
+    }
+    const editandoId = this.etapaEditandoId();
+    try {
+      if (editandoId) {
+        this.store.editarEtapa(
+          editandoId,
+          {
+            nombre,
+            fechaInicio: inicio,
+            fechaFin: fin,
+            responsableId,
+            presupuestoAsignado: asignado,
+          },
+          actor,
+        );
+        this.mensaje.set({ texto: 'Etapa actualizada.', tipo: 'info' });
+      } else {
+        this.store.crearEtapa(
+          {
+            proyectoId: this.proyectoId(),
+            nombre,
+            fechaInicio: inicio,
+            fechaFin: fin,
+            responsableId,
+            presupuestoAsignado: asignado,
+            avance: 0,
+          },
+          actor,
+        );
+        this.mensaje.set({ texto: 'Etapa creada.', tipo: 'info' });
+      }
+      this.formEtapaVisible.set(false);
+    } catch (e) {
+      this.etapaError.set(this.textoError(e));
+    }
+  }
+
   protected volver(): void {
     void this.router.navigate(['/projects']);
+  }
+
+  protected etapaPorId(etapaId: string): EtapaTrabajo {
+    const etapa = this.etapas().find((e) => e.id === etapaId);
+    if (!etapa) {
+      throw new Error(`Etapa no encontrada: ${etapaId}`);
+    }
+    return etapa;
   }
 
   private textoError(e: unknown): string {

@@ -132,6 +132,51 @@
   }
 }
 
+.bloque-cabecera {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.form-etapa {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--ph-borde, #d5dae2);
+  border-radius: var(--ph-radio, 8px);
+  background: var(--ph-fondo-suave, #eef1f6);
+
+  h3 {
+    margin: 0;
+    font-size: 0.9375rem;
+  }
+
+  .form-etapa-fila {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+    gap: 0.75rem;
+  }
+
+  .acciones-form {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .boton.primario {
+    background: var(--ph-primario, #1f5eff);
+    border-color: var(--ph-primario, #1f5eff);
+    color: #fff;
+
+    &:hover {
+      color: #fff;
+      filter: brightness(1.08);
+    }
+  }
+}
+
 .vacio {
   color: var(--ph-texto-suave, #5b6472);
   font-style: italic;
