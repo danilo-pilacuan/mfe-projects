@@ -1,0 +1,163 @@
+@if (proyecto(); as p) {
+  <section class="detalle">
+    <header class="cabecera">
+      <div>
+        <a class="volver" routerLink="/projects">&larr; Volver al portafolio</a>
+        <h1>{{ p.nombre }}</h1>
+        <p class="subtitulo">{{ p.descripcion }}</p>
+        <div class="chips">
+          <ph-stage-badge [valor]="p.etapa" kind="etapa" />
+          <ph-stage-badge [valor]="p.estado" kind="estado" />
+          <span class="chip">Patrocinador: {{ p.patrocinadorId }}</span>
+          <span class="chip">Objetivo: {{ intlFecha(p.fechaObjetivo) }}</span>
+        </div>
+      </div>
+      <div class="acciones">
+        @for (destino of transiciones(); track destino) {
+          <button type="button" class="boton" (click)="avanzar(destino)">
+            Ir a {{ etiquetaEtapa(destino) }}
+          </button>
+        }
+        @if (permisos.puedeCancelarProyecto(p.id)) {
+          <button type="button" class="boton peligro" (click)="cancelar()">Cancelar proyecto</button>
+        }
+        @if (permisos.puedeCerrarProyecto(p.id)) {
+          <button type="button" class="boton" (click)="cerrar()">Cerrar proyecto</button>
+        }
+      </div>
+    </header>
+
+    @if (mensaje(); as m) {
+      <p class="mensaje" [class.error]="m.tipo === 'error'">{{ m.texto }}</p>
+    }
+
+    <div class="tarjetas">
+      <div class="tarjeta">
+        <span class="tarjeta-valor">{{ pct(resumen()?.avance ?? 0) }}</span>
+        <span class="tarjeta-etiqueta">Avance ponderado</span>
+      </div>
+      <div class="tarjeta">
+        <span class="tarjeta-valor">{{ monto(resumen()?.presupuestoAsignado ?? 0) }}</span>
+        <span class="tarjeta-etiqueta">Presupuesto asignado</span>
+      </div>
+      <div class="tarjeta">
+        <span class="tarjeta-valor">{{ monto(resumen()?.presupuestoConsumido ?? 0) }}</span>
+        <span class="tarjeta-etiqueta">Presupuesto consumido</span>
+      </div>
+      <div class="tarjeta" [class.excedida]="resumen()?.excedido">
+        <span class="tarjeta-valor">{{ monto(resumen()?.desviacion ?? 0) }}</span>
+        <span class="tarjeta-etiqueta">Desviacion de presupuesto</span>
+      </div>
+    </div>
+
+    <section class="bloque">
+      <h2>Etapas de trabajo</h2>
+      <ph-data-table [filas]="filasEtapas()" [cargando]="false" textoVacio="Sin etapas de trabajo registradas.">
+        <ph-data-table-column name="nombre" header="Etapa">
+          <ng-template #cell let-fila>{{ fila.nombre }}</ng-template>
+        </ph-data-table-column>
+        <ph-data-table-column name="inicio" header="Inicio">
+          <ng-template #cell let-fila>{{ fila.inicio }}</ng-template>
+        </ph-data-table-column>
+        <ph-data-table-column name="fin" header="Fin">
+          <ng-template #cell let-fila>{{ fila.fin }}</ng-template>
+        </ph-data-table-column>
+        <ph-data-table-column name="responsable" header="Responsable">
+          <ng-template #cell let-fila>{{ fila.responsable }}</ng-template>
+        </ph-data-table-column>
+        <ph-data-table-column name="avance" header="Avance" align="right">
+          <ng-template #cell let-fila>{{ pct(fila.avance) }}</ng-template>
+        </ph-data-table-column>
+        <ph-data-table-column name="asignado" header="Asignado" align="right">
+          <ng-template #cell let-fila>{{ monto(fila.asignado) }}</ng-template>
+        </ph-data-table-column>
+        <ph-data-table-column name="consumido" header="Consumido" align="right">
+          <ng-template #cell let-fila>
+            {{ monto(fila.consumido) }}
+            @if (fila.excedido) {
+              <span class="alerta-monto">excedido</span>
+            }
+          </ng-template>
+        </ph-data-table-column>
+        <ph-data-table-column name="acciones" header="Acciones">
+          <ng-template #cell let-fila>
+            @if (permisos.puedeEditarEtapa(p.id)) {
+              <button type="button" class="boton" (click)="registrarAvance(fila)">Avance</button>
+            }
+            @if (permisos.puedeRegistrarConsumo(p.id)) {
+              <button type="button" class="boton" (click)="registrarConsumo(fila)">Consumo</button>
+            }
+            @if (permisos.puedeEditarEtapa(p.id)) {
+              <button type="button" class="boton peligro" (click)="eliminarEtapa(fila)">Eliminar</button>
+            }
+          </ng-template>
+        </ph-data-table-column>
+      </ph-data-table>
+    </section>
+
+    <section class="bloque">
+      <h2>Cronograma (Gantt)</h2>
+      @if (etapas().length > 0) {
+        <ph-gantt-chart [etapas]="etapas()" />
+      } @else {
+        <p class="vacio">Sin etapas para graficar.</p>
+      }
+    </section>
+
+    <section class="bloque">
+      <h2>Gate de etapa: {{ etiquetaEtapa(p.etapa) }}</h2>
+      @if (gate(); as g) {
+        <ul class="gate">
+          @for (f of g.faltantes; track f) {
+            <li class="pendiente">Falta entregable: {{ f }}</li>
+          }
+          @for (nombre of g.pendientesAprobacion; track nombre) {
+            <li class="pendiente">Pendiente de aprobacion: {{ nombre }}</li>
+          }
+          @if (g.abierto) {
+            <li class="ok">Gate abierto: entregables obligatorios aprobados.</li>
+          }
+        </ul>
+      }
+      <h3>Entregables del proyecto</h3>
+      <ul class="entregables">
+        @for (e of entregables(); track e.id) {
+          <li>
+            {{ e.nombre }} (v{{ e.version }}, {{ etiquetaEtapa(e.etapa) }})
+            @if (e.aprobadoPorId) {
+              <span class="ok">aprobado</span>
+            } @else {
+              <span class="pendiente">sin aprobar</span>
+            }
+          </li>
+        }
+      </ul>
+    </section>
+
+    <section class="bloque">
+      <h2>Bitacora</h2>
+      @if (bitacora().length === 0) {
+        <p class="vacio">Sin registros.</p>
+      }
+      <ul class="bitacora">
+        @for (b of bitacora(); track b.id) {
+          <li>
+            <span class="bitacora-fecha">{{ b.fecha }}</span>
+            <span class="bitacora-autor">{{ b.autorId }}</span>
+            <span>
+              @if (b.etapaOrigen && b.etapaDestino) {
+                {{ etiquetaEtapa(b.etapaOrigen) }} &rarr; {{ etiquetaEtapa(b.etapaDestino) }}.
+              }
+              {{ b.comentario ?? '' }}
+            </span>
+          </li>
+        }
+      </ul>
+    </section>
+  </section>
+} @else {
+  <section class="detalle">
+    <p class="vacio">Proyecto no encontrado.</p>
+    <a class="volver" routerLink="/projects">&larr; Volver al portafolio</a>
+  </section>
+}

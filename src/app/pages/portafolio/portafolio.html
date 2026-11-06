@@ -1,0 +1,78 @@
+<section class="portafolio">
+  <header class="cabecera">
+    <div>
+      <h1>Portafolio de proyectos</h1>
+      <p class="subtitulo">Ciclo de vida, avance y presupuesto por proyecto.</p>
+    </div>
+    @if (puedeCrear()) {
+      <a class="boton primario" routerLink="/projects/nuevo">Nuevo proyecto</a>
+    }
+  </header>
+
+  <div class="filtros">
+    <label>
+      <span>Etapa</span>
+      <select [value]="filtroEtapa()" (change)="filtroEtapa.set($any($event.target).value)">
+        <option value="todas">Todas las etapas</option>
+        @for (e of etapas; track e) {
+          <option [value]="e">{{ etiquetaEtapa[e] }}</option>
+        }
+      </select>
+    </label>
+    <label>
+      <span>Estado</span>
+      <select [value]="filtroEstado()" (change)="filtroEstado.set($any($event.target).value)">
+        <option value="todos">Todos los estados</option>
+        @for (e of estados; track e) {
+          <option [value]="e">{{ etiquetaEstado[e] }}</option>
+        }
+      </select>
+    </label>
+    <label class="busqueda">
+      <span>Buscar</span>
+      <input
+        type="search"
+        placeholder="Nombre del proyecto..."
+        [value]="busqueda()"
+        (input)="busqueda.set($any($event.target).value)"
+      />
+    </label>
+  </div>
+
+  <ph-data-table [filas]="filas()" [cargando]="false" textoVacio="Sin proyectos que coincidan con los filtros.">
+    <ph-data-table-column name="nombre" header="Proyecto">
+      <ng-template #cell let-fila>
+        <a class="enlace" [routerLink]="['/projects', 'detalle', fila.id]">{{ fila.nombre }}</a>
+      </ng-template>
+    </ph-data-table-column>
+    <ph-data-table-column name="patrocinador" header="Patrocinador">
+      <ng-template #cell let-fila>{{ fila.patrocinador }}</ng-template>
+    </ph-data-table-column>
+    <ph-data-table-column name="etapa" header="Etapa">
+      <ng-template #cell let-fila>
+        <ph-stage-badge [valor]="fila.etapaValor" kind="etapa" />
+      </ng-template>
+    </ph-data-table-column>
+    <ph-data-table-column name="avance" header="Avance" align="right">
+      <ng-template #cell let-fila>{{ pct(fila.avance) }}</ng-template>
+    </ph-data-table-column>
+    <ph-data-table-column name="presupuesto" header="Presupuesto asignado" align="right">
+      <ng-template #cell let-fila>
+        {{ monto(fila.presupuesto) }}
+        @if (fila.excedido) {
+          <span class="alerta-monto" title="El consumo supera lo asignado">excedido</span>
+        }
+      </ng-template>
+    </ph-data-table-column>
+    <ph-data-table-column name="estado" header="Estado">
+      <ng-template #cell let-fila>
+        <ph-stage-badge [valor]="fila.estadoValor" kind="estado" />
+      </ng-template>
+    </ph-data-table-column>
+    <ph-data-table-column name="acciones" header="Acciones">
+      <ng-template #cell let-fila>
+        <button type="button" class="boton" (click)="abrir(fila.id)">Ver detalle</button>
+      </ng-template>
+    </ph-data-table-column>
+  </ph-data-table>
+</section>

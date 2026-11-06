@@ -1,13 +1,11 @@
-import { Component } from '@angular/core';
 import { Routes } from '@angular/router';
-
-@Component({
-  selector: 'app-projects-root',
-  standalone: true,
-  template: `<h1>Proyectos</h1><p>Portafolio de proyectos (fase 4).</p>`,
-})
-export class PlaceholderComponent {}
+import { Portafolio } from './pages/portafolio/portafolio';
+import { ProyectoDetalle } from './pages/proyecto-detalle/proyecto-detalle';
+import { ProyectoForm } from './pages/proyecto-form/proyecto-form';
 
 export const remoteRoutes: Routes = [
-  { path: '', component: PlaceholderComponent },
+  { path: '', component: Portafolio },
+  { path: 'nuevo', component: ProyectoForm },
+  { path: 'detalle/:id', component: ProyectoDetalle },
+  { path: 'editar/:id', component: ProyectoForm },
 ];

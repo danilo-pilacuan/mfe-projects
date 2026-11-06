@@ -1,0 +1,61 @@
+<section class="form">
+  <h1>{{ editando() ? 'Editar proyecto' : 'Nuevo proyecto' }}</h1>
+
+  @if (!permisos.haySesion()) {
+    <ph-permission-banner
+      titulo="Sesion requerida"
+      detalle="Seleccione un usuario en el shell para crear o editar proyectos."
+      variante="warn"
+    />
+  }
+
+  <form (submit)="$event.preventDefault(); guardar()">
+    <ph-form-field label="Nombre" [requerido]="true" [error]="error() || null">
+      <input
+        type="text"
+        placeholder="Nombre del proyecto"
+        [value]="nombre()"
+        (input)="nombre.set($any($event.target).value)"
+      />
+    </ph-form-field>
+
+    <ph-form-field label="Descripcion">
+      <textarea
+        rows="3"
+        placeholder="Objetivo y alcance del proyecto"
+        [value]="descripcion()"
+        (input)="descripcion.set($any($event.target).value)"
+      ></textarea>
+    </ph-form-field>
+
+    <ph-form-field label="Presupuesto estimado (COP)" [requerido]="true">
+      <input
+        type="number"
+        min="0"
+        step="1000"
+        placeholder="0"
+        [value]="presupuestoEstimado()"
+        (input)="presupuestoEstimado.set($any($event.target).value)"
+      />
+    </ph-form-field>
+
+    <ph-form-field label="Fecha objetivo" [requerido]="true">
+      <input
+        type="date"
+        [value]="fechaObjetivo()"
+        (change)="fechaObjetivo.set($any($event.target).value)"
+      />
+    </ph-form-field>
+
+    <div class="acciones">
+      <button
+        type="submit"
+        class="boton primario"
+        [disabled]="!puedeGuardar() || !nombre().trim() || !fechaObjetivo()"
+      >
+        {{ editando() ? 'Guardar cambios' : 'Crear proyecto' }}
+      </button>
+      <button type="button" class="boton" (click)="cancelar()">Cancelar</button>
+    </div>
+  </form>
+</section>
